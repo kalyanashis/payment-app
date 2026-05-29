@@ -68,7 +68,7 @@ public class GatewayConfig {
         return exchange -> Mono.justOrEmpty(
                 exchange.getRequest()
                         .getHeaders()
-                        .getFirst("X-User-ID")
+                        .getFirst("X-User-Id")
         );
     }
 }
