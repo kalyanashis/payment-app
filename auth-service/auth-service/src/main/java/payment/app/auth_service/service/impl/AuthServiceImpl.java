@@ -3,6 +3,7 @@ package payment.app.auth_service.service.impl;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -22,6 +23,7 @@ import java.util.Date;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
@@ -70,13 +72,9 @@ public class AuthServiceImpl implements AuthService {
 
         Date expiration = jwtUtil.extractClaim(token, Claims::getExpiration);
         long remainingMillis = expiration.getTime() - System.currentTimeMillis();
-        System.out.println("REMAINING MILLIS = " + remainingMillis);
-        redisTemplate.opsForValue().set(token, "blacklisted", Duration.ofMillis(remainingMillis));
+        redisTemplate.opsForValue().set("blacklist:" + token, "true", Duration.ofMillis(remainingMillis));
 
-        String value = redisTemplate.opsForValue().get(token);
-
-        System.out.println("VALUE AFTER STORE = " + value);
-
-        System.out.println("BLACKLISTED TOKEN = " + token);
+        String value = redisTemplate.opsForValue().get("blacklist:" + token);
+        log.info("VALUE AFTER STORE = {}", value);
     }
 }
