@@ -2,10 +2,12 @@ package payment.app.auth_service.interceptor;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 @Component
+@Slf4j
 public class GatewayValidationInterceptor implements HandlerInterceptor {
 
     @Override
@@ -14,7 +16,7 @@ public class GatewayValidationInterceptor implements HandlerInterceptor {
                              Object handler) throws Exception {
 
 
-        System.out.println("Interceptor hit, in auth-service");
+        log.info("Interceptor hit, in auth-service");
 
         String gatewayHeader = request.getHeader("X-Internal-Gateway");
         String internalServiceHeader = request.getHeader("X-Internal-Service");

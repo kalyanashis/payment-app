@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import payment.app.auth_service.model.dto.AuthResponse;
 import payment.app.auth_service.model.dto.LoginRequest;
 import payment.app.auth_service.model.dto.RegisterRequest;
+import payment.app.auth_service.model.dto.RegisterResponse;
 import payment.app.auth_service.service.AuthService;
 
 @RestController
@@ -19,7 +20,7 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(authService.register(request));
     }
