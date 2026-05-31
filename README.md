@@ -178,6 +178,32 @@ payment-app/
 
 ---
 
+## Postman Collection
+
+The Postman collection for testing all APIs is available under:
+
+postman/payment-app-postman-collection.json
+
+### Available APIs
+
+#### Auth Service
+- Register
+- Login
+- Logout
+
+#### Account Service
+- Create Account
+- Credit
+- Debit
+- Balance
+
+#### Transaction Service
+- Transfer
+- Transaction
+- All Transactions
+
+---
+
 # Current Status
 
 Implemented:

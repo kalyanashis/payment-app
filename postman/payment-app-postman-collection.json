@@ -1,0 +1,367 @@
+{
+  "info": {
+    "_postman_id": "02c155fc-7ff3-4763-8379-323c9155d744",
+    "name": "Payment Service",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "1363661"
+  },
+  "item": [
+    {
+      "name": "Login",
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"username\": \"kalyan\",\r\n  \"password\": \"passdata321\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://localhost:8443/auth/login",
+          "protocol": "https",
+          "host": [
+            "localhost"
+          ],
+          "port": "8443",
+          "path": [
+            "auth",
+            "login"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Transfer",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "pm.variables.set(\r",
+              "    \"idempotencyKey\",\r",
+              "    crypto.randomUUID()\r",
+              ");"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJrYWx5YW4iLCJpYXQiOjE3Nzg1NzQwNjYsImV4cCI6MTc3ODU3NzY2Nn0.D9tCGXb7SIPgcd-14ubkDDx-BlNg9CdYoWDMDr4gUo0",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"username\": \"kalyan\",\r\n  \"password\": \"password123\",\r\n  \"role\": \"USER\"\r\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8083/transactions/transfer",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8083",
+          "path": [
+            "transactions",
+            "transfer"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Credit",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJrYWx5YW4iLCJpYXQiOjE3Nzg2MDM1NDYsImV4cCI6MTc3ODYwNzE0Nn0.i1gUjDmDo-el6gEgfAFuu-0zk_uUsFI7b6Vw53zwzhM",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"amount\": 200\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8082/accounts/FEC7742C23/credit",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8082",
+          "path": [
+            "accounts",
+            "FEC7742C23",
+            "credit"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Logout",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJrYWx5YW4iLCJpYXQiOjE3NzkyMTI2MDIsImV4cCI6MTc3OTIxNjIwMn0.k4b-KS8Ix_2AIPISlMMloIfHyFu_ua8mqzwHhwxwMYQ",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/auth/logout",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "auth",
+            "logout"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Register",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"username\": \"super\",\r\n  \"password\": \"passdata345\",\r\n  \"role\": \"ADMIN\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://localhost:8443/auth/register",
+          "protocol": "https",
+          "host": [
+            "localhost"
+          ],
+          "port": "8443",
+          "path": [
+            "auth",
+            "register"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "All Transactions",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJzdXBlciIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc3OTUxODc0NCwiZXhwIjoxNzc5NTIyMzQ0fQ.UpfVq_XtWZDYwJYRbCpuMQa9-T6lLUaGtyQAeMsx6z4",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": ""
+        },
+        "url": {
+          "raw": "https://localhost:8443/transactions/admin/all",
+          "protocol": "https",
+          "host": [
+            "localhost"
+          ],
+          "port": "8443",
+          "path": [
+            "transactions",
+            "admin",
+            "all"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Transaction",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJzdXBlciIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc3OTU1MDgyMiwiZXhwIjoxNzc5NTU0NDIyfQ.a0cE_2LJju8qmFFe5gCEJEs6wrhT7QwvuRghBgWJdyQ",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": ""
+        },
+        "url": {
+          "raw": "https://localhost:8443/transactions/FEC7742C23",
+          "protocol": "https",
+          "host": [
+            "localhost"
+          ],
+          "port": "8443",
+          "path": [
+            "transactions",
+            "FEC7742C23"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Debit",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"amount\": 10000\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://localhost:8443/accounts/6FFD63B3FF/debit",
+          "protocol": "https",
+          "host": [
+            "localhost"
+          ],
+          "port": "8443",
+          "path": [
+            "accounts",
+            "6FFD63B3FF",
+            "debit"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Balance",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJrYWx5YW4iLCJyb2xlIjoiVVNFUiIsImlhdCI6MTc4MDIxNTA4NywiZXhwIjoxNzgwMjE4Njg3fQ.pXoI3BSR5y-SeZKJU6ZDoLPAr3YjE5zTaSHbTE2oUVs",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://localhost:8443/accounts/FEC7742C23/balance",
+          "protocol": "https",
+          "host": [
+            "localhost"
+          ],
+          "port": "8443",
+          "path": [
+            "accounts",
+            "FEC7742C23",
+            "balance"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Create Account",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"customerName\": \"Ashis\",\r\n    \"initialBalance\": 2500\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://localhost:8443/accounts",
+          "protocol": "https",
+          "host": [
+            "localhost"
+          ],
+          "port": "8443",
+          "path": [
+            "accounts"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}
