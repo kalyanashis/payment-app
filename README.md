@@ -186,6 +186,7 @@ This project uses Docker Compose to start the required infrastructure services.
 
 ```bash
 docker compose up -d
+```
 
 ---
 
