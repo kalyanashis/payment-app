@@ -37,13 +37,16 @@ public class AccountController {
     //@ResponseStatus(HttpStatus.NO_CONTENT)
     public ResponseEntity<BalanceResponse> credit(@PathVariable String accountNumber, @Valid @RequestBody AmountRequest request) {
        BalanceResponse response = accountService.credit(accountNumber, request);
+
        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/{accountNumber}/debit")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void debit(@PathVariable String accountNumber, @Valid @RequestBody AmountRequest request) {
-        accountService.debit(accountNumber, request);
+    //@ResponseStatus(HttpStatus.NO_CONTENT)
+    public ResponseEntity<BalanceResponse> debit(@PathVariable String accountNumber, @Valid @RequestBody AmountRequest request) {
+        BalanceResponse response = accountService.debit(accountNumber, request);
+
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{accountNumber}/balance")

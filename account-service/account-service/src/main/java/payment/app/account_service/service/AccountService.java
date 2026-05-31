@@ -13,5 +13,5 @@ public interface AccountService {
 
     BalanceResponse credit(String accountNumber, AmountRequest request);
 
-    void debit(String accountNumber, AmountRequest request);
+    BalanceResponse debit(String accountNumber, AmountRequest request);
 }

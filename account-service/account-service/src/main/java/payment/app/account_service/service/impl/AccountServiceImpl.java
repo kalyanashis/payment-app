@@ -50,13 +50,15 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
-    public void debit(String accountNumber, AmountRequest request) {
+    public BalanceResponse  debit(String accountNumber, AmountRequest request) {
         Account account = getAccount(accountNumber);
         if(account.getBalance().compareTo(request.getAmount()) < 0) {
             throw new InsufficientBalanceException("Insufficient balance");
         }
         account.debit(request.getAmount());
         accountRepository.save(account);
+
+        return new BalanceResponse(account.getAccountNumber(), account.getBalance(), "Amount debited successfully");
     }
 
     // -------- Helper methods --------
