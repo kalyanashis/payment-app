@@ -28,13 +28,7 @@ public class AccountController {
         return accountService.createAccount(request, userId);
     }
 
-    /*@GetMapping("/{accountNumber}/balance")
-    public BalanceResponse getBalance(@PathVariable String accountNumber, @RequestHeader("X-User-Id") String userId) {
-        return accountService.getBalance(accountNumber);
-    }*/
-
     @PostMapping("/{accountNumber}/credit")
-    //@ResponseStatus(HttpStatus.NO_CONTENT)
     public ResponseEntity<BalanceResponse> credit(@PathVariable String accountNumber, @Valid @RequestBody AmountRequest request) {
        BalanceResponse response = accountService.credit(accountNumber, request);
 
@@ -42,7 +36,6 @@ public class AccountController {
     }
 
     @PostMapping("/{accountNumber}/debit")
-    //@ResponseStatus(HttpStatus.NO_CONTENT)
     public ResponseEntity<BalanceResponse> debit(@PathVariable String accountNumber, @Valid @RequestBody AmountRequest request) {
         BalanceResponse response = accountService.debit(accountNumber, request);
 
