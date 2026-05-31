@@ -178,6 +178,17 @@ payment-app/
 
 ---
 
+## Infrastructure Setup
+
+This project uses Docker Compose to start the required infrastructure services.
+
+### Start Kafka and Redis
+
+```bash
+docker compose up -d
+
+---
+
 ## Postman Collection
 
 The Postman collection for testing all APIs is available under:
