@@ -11,17 +11,14 @@ public interface AccountServiceClient {
 
     @PostMapping("accounts/{accountNumber}/debit")
     void debit(@PathVariable("accountNumber") String accountNumber,
-               @RequestBody AmountRequest request,
-               @RequestHeader("Authorization") String token);
+               @RequestBody AmountRequest request);
 
     @PostMapping("accounts/{accountNumber}/credit")
     void credit(@PathVariable("accountNumber") String accountNumber,
-                @RequestBody AmountRequest request,
-                @RequestHeader("Authorization") String token);
+                @RequestBody AmountRequest request);
 
     @GetMapping("/accounts/{accountNumber}/balance")
     BalanceResponse getBalance(
-            @PathVariable("accountNumber") String accountNumber,
-            @RequestHeader("Authorization") String token
+            @PathVariable("accountNumber") String accountNumber
     );
 }

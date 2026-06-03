@@ -47,13 +47,13 @@ public class TransactionServiceImpl implements TransactionService {
 
         try {
             //Check balance
-            BalanceResponse balance = accountServiceClient.getBalance(request.getFromAccount(), token);
+            BalanceResponse balance = accountServiceClient.getBalance(request.getFromAccount());
             if(balance.getBalance().compareTo(request.getAmount()) < 0) {
                 throw new RuntimeException("Insufficient balance");
             }
 
             // Debit from source account
-            accountServiceClient.debit(request.getFromAccount(), new AmountRequest(request.getAmount()), token);
+            accountServiceClient.debit(request.getFromAccount(), new AmountRequest(request.getAmount()));
             debitDone = true;
 
             /*if (true) {
@@ -61,7 +61,7 @@ public class TransactionServiceImpl implements TransactionService {
             }*/
 
             // Credit to destination account
-            accountServiceClient.credit(request.getToAccount(), new AmountRequest(request.getAmount()), token);
+            accountServiceClient.credit(request.getToAccount(), new AmountRequest(request.getAmount()));
 
             // Save successful transaction
             Transaction transaction = new Transaction(transactionId,
@@ -93,10 +93,10 @@ public class TransactionServiceImpl implements TransactionService {
             // Compensation
             if(debitDone) {
                 try {
-                    accountServiceClient.credit(request.getFromAccount(), new AmountRequest(request.getAmount()), token);
+                    accountServiceClient.credit(request.getFromAccount(), new AmountRequest(request.getAmount()));
                     log.info("Compensation rollback successful");
                 } catch(Exception exc) {
-                    log.info("Rollback failed: " + exc.getMessage());
+                    log.info("Rollback failed: {}", exc.getMessage());
                 }
             }
             // Persist failed transaction
