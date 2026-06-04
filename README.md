@@ -124,6 +124,21 @@ Implemented using:
 
 ---
 
+## Daily Transfer Limit
+
+A configurable daily transfer limit has been implemented to prevent excessive fund transfers from a single account within a day.
+
+### Configuration
+
+The limit is configured in:
+
+```yaml
+transfer:
+  daily-limit: 5000
+```
+
+---
+
 # Project Structure
 
 ```text
@@ -226,6 +241,7 @@ Implemented:
 - Dead Letter Topic (DLT)
 - AES Kafka Payload Encryption
 - Shared Maven Security Library
+- Daily Transfer Limit
 
 ---
 
