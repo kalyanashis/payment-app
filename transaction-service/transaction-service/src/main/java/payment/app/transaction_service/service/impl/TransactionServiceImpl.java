@@ -3,11 +3,14 @@ package payment.app.transaction_service.service.impl;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import payment.app.transaction_service.client.AccountServiceClient;
+import payment.app.transaction_service.exception.DailyTransferLimitExceededException;
+import payment.app.transaction_service.exception.InsufficientBalanceException;
 import payment.app.transaction_service.exception.TransactionFailedException;
 import payment.app.transaction_service.exception.TransferProcessingException;
 import payment.app.transaction_service.kafka.event.TransactionCompletedEvent;
@@ -17,6 +20,9 @@ import payment.app.transaction_service.model.entity.Transaction;
 import payment.app.transaction_service.repository.TransactionRepository;
 import payment.app.transaction_service.service.TransactionService;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -32,6 +38,9 @@ public class TransactionServiceImpl implements TransactionService {
     private final TransactionRepository transactionRepository;
     private final TransactionEventProducer eventProducer;
 
+    @Value("${transfer.daily-limit}")
+    private BigDecimal dailyTransferLimit;
+
     @Override
     @CacheEvict(value = "transactions", key = "#request.fromAccount")
     public TransactionResponse transfer(TransferRequest request, String token, String idempotencyKey) {
@@ -46,10 +55,13 @@ public class TransactionServiceImpl implements TransactionService {
         }
 
         try {
+            //Check daily transfer limit
+            validateDailyLimit(request.getFromAccount(), request.getAmount());
+
             //Check balance
             BalanceResponse balance = accountServiceClient.getBalance(request.getFromAccount());
             if(balance.getBalance().compareTo(request.getAmount()) < 0) {
-                throw new RuntimeException("Insufficient balance");
+                throw new InsufficientBalanceException("Insufficient balance");
             }
 
             // Debit from source account
@@ -120,7 +132,7 @@ public class TransactionServiceImpl implements TransactionService {
     @Cacheable(value = "transactions", key = "#accountNumber")
     public List<TransactionResponse> getTransactions(String accountNumber) {
 
-        System.out.println("FETCHING FROM DB...");
+        log.info("FETCHING FROM DB...");
 
         return transactionRepository.findByFromAccountOrToAccount(accountNumber, accountNumber)
                 .stream()
@@ -150,5 +162,25 @@ public class TransactionServiceImpl implements TransactionService {
 
     private String generateTransactionId() {
         return UUID.randomUUID().toString();
+    }
+
+    private void validateDailyLimit(String accountNumber, BigDecimal transferAmount) {
+
+        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+
+        BigDecimal transferredToday = transactionRepository.getTodayTransferAmount(accountNumber, TransactionType.TRANSFER, startOfDay);
+        BigDecimal totalAmount = transferredToday.add(transferAmount);
+
+        if(totalAmount.compareTo(dailyTransferLimit) > 0) {
+
+            throw new DailyTransferLimitExceededException(
+                    String.format(
+                            "Daily transfer limit exceeded. Limit=%s, Used=%s, Requested=%s",
+                            dailyTransferLimit,
+                            transferredToday,
+                            transferAmount
+                    )
+            );
+        }
     }
 }

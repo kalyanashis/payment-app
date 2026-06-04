@@ -26,6 +26,16 @@ public class GlobalExceptionHandler {
         );
     }
 
+    @ExceptionHandler(InsufficientBalanceException.class)
+    private ResponseEntity<?> handleInsufficientBalance(InsufficientBalanceException ex) {
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    @ExceptionHandler(DailyTransferLimitExceededException.class)
+    private ResponseEntity<?> handleDailyTransferLimitExceeded(DailyTransferLimitExceededException ex) {
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<?> handleGenericException(Exception ex) {
 
@@ -40,7 +50,8 @@ public class GlobalExceptionHandler {
         Map<String, Object> response = new HashMap<>();
         response.put("timestamp", LocalDateTime.now());
         response.put("status", status.value());
-        response.put("error", message);
+        response.put("error", status.getReasonPhrase());
+        response.put("message", message);
 
         return ResponseEntity.status(status).body(response);
     }

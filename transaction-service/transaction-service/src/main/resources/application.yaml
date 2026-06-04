@@ -56,3 +56,7 @@ logging:
 # Kafka secret
 aes:
   secret: ${AES_SECRET}
+
+# Daily transfer limit
+transfer:
+  daily-limit: 5000
