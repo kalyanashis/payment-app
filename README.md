@@ -205,6 +205,59 @@ docker compose up -d
 
 ---
 
+## Database Setup
+
+The project uses MySQL as the primary database.
+
+### Import Schema
+
+Import the provided schema file:
+
+```bash
+mysql -u root -p < database/schema.sql
+```
+
+This will create the required database objects and tables.
+
+The application is configured with Hibernate DDL auto-update and can create/update tables automatically during startup.
+
+---
+
+## Admin User Setup
+
+Some operations require an ADMIN user.
+
+### Step 1: Register a User
+
+Use the registration endpoint:
+
+```http
+POST /auth/register
+```
+
+Example:
+
+```json
+{
+  "username": "super",
+  "password": "password123"
+}
+```
+
+### Step 2: Promote User to ADMIN
+
+Execute the following SQL:
+
+```sql
+UPDATE authdb.users
+SET role = 'ADMIN'
+WHERE username = 'super';
+```
+
+The user can then access ADMIN-protected endpoints.
+
+---
+
 ## Postman Collection
 
 The Postman collection for testing all APIs is available under:
