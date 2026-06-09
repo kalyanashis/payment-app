@@ -19,6 +19,9 @@ public class Transaction {
     @Column(name = "transaction_id", unique = true, nullable = false)
     private String transactionId;
 
+    @Column(name = "original_transaction_id")
+    private String originalTransactionId;
+
     @Column(name = "from_account")
     private String fromAccount;
 
@@ -59,6 +62,10 @@ public class Transaction {
         this.type = type;
         this.status = status;
         this.createdAt = LocalDateTime.now();
+    }
+
+    public void assignOriginalTransactionId(String originalTransactionId) {
+        this.originalTransactionId = originalTransactionId;
     }
 
     public void assignIdempotencyKey(String key) {

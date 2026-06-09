@@ -27,4 +27,8 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
             @Param("type") TransactionType type,
             @Param("startOfDay") LocalDateTime startOfDay
     );
+
+    Optional<Transaction> findByTransactionId(String transactionId);
+
+    boolean existsByOriginalTransactionId(String originalTransactionId);
 }

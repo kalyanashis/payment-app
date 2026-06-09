@@ -60,3 +60,8 @@ aes:
 # Daily transfer limit
 transfer:
   daily-limit: 5000
+
+# Payment reversal time limit
+payment:
+  reversal:
+    allowed-hours: 24

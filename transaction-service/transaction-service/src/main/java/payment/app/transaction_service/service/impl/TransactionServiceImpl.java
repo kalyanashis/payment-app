@@ -9,10 +9,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import payment.app.transaction_service.client.AccountServiceClient;
-import payment.app.transaction_service.exception.DailyTransferLimitExceededException;
-import payment.app.transaction_service.exception.InsufficientBalanceException;
-import payment.app.transaction_service.exception.TransactionFailedException;
-import payment.app.transaction_service.exception.TransferProcessingException;
+import payment.app.transaction_service.exception.*;
 import payment.app.transaction_service.kafka.event.TransactionCompletedEvent;
 import payment.app.transaction_service.kafka.producer.TransactionEventProducer;
 import payment.app.transaction_service.model.dto.*;
@@ -38,8 +35,14 @@ public class TransactionServiceImpl implements TransactionService {
     private final TransactionRepository transactionRepository;
     private final TransactionEventProducer eventProducer;
 
+    private static final String SUCCESS = "SUCCESS";
+    private static final String FAILED = "FAILED";
+
     @Value("${transfer.daily-limit}")
     private BigDecimal dailyTransferLimit;
+
+    @Value(("${payment.reversal.allowed-hours}"))
+    private long reversalAllowedHours;
 
     @Override
     @CacheEvict(value = "transactions", key = "#request.fromAccount")
@@ -81,7 +84,7 @@ public class TransactionServiceImpl implements TransactionService {
                     request.getToAccount(),
                     request.getAmount(),
                     TransactionType.TRANSFER,
-                    "SUCCESS");
+                    SUCCESS);
 
             transaction.assignIdempotencyKey(idempotencyKey);
 
@@ -102,7 +105,7 @@ public class TransactionServiceImpl implements TransactionService {
             return toResponse(transaction, false);
         } catch(FeignException | TransferProcessingException ex) {
 
-            // Compensation
+            // Compensation logic
             if(debitDone) {
                 try {
                     accountServiceClient.credit(request.getFromAccount(), new AmountRequest(request.getAmount()));
@@ -118,7 +121,7 @@ public class TransactionServiceImpl implements TransactionService {
                     request.getToAccount(),
                     request.getAmount(),
                     TransactionType.TRANSFER,
-                    "FAILED");
+                    FAILED);
 
             transactionRepository.save(failedTransaction);
             throw new TransactionFailedException(
@@ -145,23 +148,104 @@ public class TransactionServiceImpl implements TransactionService {
         return transactionRepository.findAll();
     }
 
-    // ---------- Helper methods ----------
+    @Override
+    public TransactionResponse reverseTransaction(String transactionId) {
 
-    private TransactionResponse toResponse(Transaction transaction, boolean replay) {
+        // Retrieve the original transaction using business transaction ID
+        Transaction original = transactionRepository.findByTransactionId(transactionId)
+                .orElseThrow(() -> new TransactionNotFoundException("Transaction not found"));
 
-        return new TransactionResponse(
-                transaction.getTransactionId(),
-                transaction.getFromAccount(),
-                transaction.getToAccount(),
-                transaction.getAmount(),
-                transaction.getType(),
-                transaction.getStatus(),
-                transaction.getCreatedAt(),
-                replay);
-    }
+        // Only transfer type transactions are eligible for reversal
+        if(original.getType() != TransactionType.TRANSFER) {
+            throw new IllegalArgumentException("Only transfer type transactions can be reversed");
+        }
 
-    private String generateTransactionId() {
-        return UUID.randomUUID().toString();
+        // Only successfully completed transfers can be reversed
+        if(!SUCCESS.equals(original.getStatus())) {
+            throw new IllegalArgumentException("Only successful transactions can be reversed");
+        }
+
+        // Validate reversal window
+        validateReversalWindow(original);
+
+        // Prevent duplicate reversal of the same transaction
+        if(transactionRepository.existsByOriginalTransactionId(transactionId)) {
+            throw new TransactionAlreadyReversedException("Transaction already reversed");
+        }
+
+        // Verify that the recipient still has sufficient balance to return the transferred amount
+        BalanceResponse balance = accountServiceClient.getBalance(original.getToAccount());
+
+        if(balance.getBalance().compareTo(original.getAmount()) < 0) {
+            throw new InsufficientBalanceException("Insufficient balance for reversal");
+        }
+
+        // Generate a new transaction ID for the reversal transaction
+        String reversalTransactionId = generateTransactionId();
+
+        boolean debitDone = false;
+
+        try {
+            // Reverse Step 1:
+            // Debit the original recipient account
+            accountServiceClient.debit(original.getToAccount(), new AmountRequest(original.getAmount()));
+
+            debitDone = true;
+
+            // Reverse Step 2:
+            // Credit the original sender account
+            accountServiceClient.credit(original.getFromAccount(), new AmountRequest(original.getAmount()));
+
+            // Create reversal transaction record for audit/history
+            Transaction reversal = new Transaction(reversalTransactionId,
+                    original.getToAccount(),
+                    original.getFromAccount(),
+                    original.getAmount(),
+                    TransactionType.REVERSAL,
+                    SUCCESS);
+
+            // Link reversal transaction to original transaction
+            reversal.assignOriginalTransactionId(original.getTransactionId());
+
+            transactionRepository.save(reversal);
+
+            // Return API response
+            return toResponse(reversal, false);
+
+        } catch(FeignException | TransferProcessingException ex) {
+
+            // Compensation Logic:
+            // If recipient was already debited but sender could not be credited,
+            // restore the amount back to recipient account
+            if(debitDone) {
+                try {
+                    accountServiceClient.credit(original.getToAccount(), new AmountRequest(original.getAmount()));
+                    log.info("Reversal rollback successful");
+                } catch(Exception exc) {
+                    log.error("Reversal rollback failed: {}", exc.getMessage());
+                }
+            }
+
+            // Persist failed reversal attempt for audit purposes
+            Transaction failedReversal = new Transaction(
+                    reversalTransactionId,
+                    original.getToAccount(),
+                    original.getFromAccount(),
+                    original.getAmount(),
+                    TransactionType.REVERSAL,
+                    FAILED
+            );
+
+            failedReversal.assignOriginalTransactionId(original.getTransactionId());
+            transactionRepository.save(failedReversal);
+            log.info(
+                    "Reversal transaction saved successfully. Original Transaction: {}, Reversal Transaction: {}",
+                    original.getTransactionId(),
+                    reversalTransactionId
+            );
+
+            throw new TransactionFailedException("Reversal failed: " + ex.getMessage());
+        }
     }
 
     private void validateDailyLimit(String accountNumber, BigDecimal transferAmount) {
@@ -182,5 +266,39 @@ public class TransactionServiceImpl implements TransactionService {
                     )
             );
         }
+    }
+
+    private void validateReversalWindow(Transaction transaction) {
+
+        LocalDateTime cutOff = LocalDateTime.now().minusHours(reversalAllowedHours);
+        if(transaction.getCreatedAt().isBefore(cutOff)) {
+            throw new InvalidTransactionException("Reversal period has expired");
+        }
+    }
+
+    // ---------- Helper methods ----------
+
+    private TransactionResponse toResponse(Transaction transaction, boolean replay) {
+
+        return new TransactionResponse(
+                transaction.getTransactionId(),
+                transaction.getFromAccount(),
+                transaction.getToAccount(),
+                transaction.getAmount(),
+                transaction.getType(),
+                transaction.getStatus(),
+                transaction.getCreatedAt(),
+                replay);
+    }
+
+    private String generateTransactionId() {
+
+        String random =  UUID.randomUUID()
+                        .toString()
+                        .replace("-", "")
+                        .substring(0, 12)
+                        .toUpperCase();
+
+        return "TXN-" + random;
     }
 }

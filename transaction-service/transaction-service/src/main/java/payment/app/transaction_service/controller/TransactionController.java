@@ -34,6 +34,12 @@ public class TransactionController {
         return  ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @PostMapping("/reverse/{transactionId}")
+    ResponseEntity<TransactionResponse> reverseTransaction(@PathVariable String transactionId) {
+        TransactionResponse response = transactionService.reverseTransaction(transactionId);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/{accountNumber}")
     public List<TransactionResponse> getTransactions(
             @PathVariable String accountNumber) {

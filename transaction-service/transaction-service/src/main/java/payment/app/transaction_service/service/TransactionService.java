@@ -11,4 +11,5 @@ public interface TransactionService {
    TransactionResponse transfer(TransferRequest request, String token, String idempotencyKey);
    List<TransactionResponse> getTransactions(String accountNumber);
    List<Transaction> getAllTransactions();
+   TransactionResponse reverseTransaction(String transactionId);
 }

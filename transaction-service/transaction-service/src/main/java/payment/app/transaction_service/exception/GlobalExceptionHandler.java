@@ -20,20 +20,27 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(FeignException.class)
     private ResponseEntity<?> handleFeignException(FeignException ex) {
-        return buildErrorResponse(
-                HttpStatus.BAD_GATEWAY,
-                "Downstream service error"
-        );
+        return buildErrorResponse(HttpStatus.BAD_GATEWAY, "Downstream service error");
     }
 
     @ExceptionHandler(InsufficientBalanceException.class)
     private ResponseEntity<?> handleInsufficientBalance(InsufficientBalanceException ex) {
-        return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+        return buildErrorResponse(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
     }
 
     @ExceptionHandler(DailyTransferLimitExceededException.class)
     private ResponseEntity<?> handleDailyTransferLimitExceeded(DailyTransferLimitExceededException ex) {
-        return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+        return buildErrorResponse(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
+    }
+
+    @ExceptionHandler(TransactionAlreadyReversedException.class)
+    private ResponseEntity<?> handleTransactionAlreadyReversed(TransactionAlreadyReversedException ex) {
+        return buildErrorResponse(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(TransactionNotFoundException.class)
+    private ResponseEntity<?> handleTransactionNotFound(TransactionNotFoundException ex) {
+        return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
     @ExceptionHandler(Exception.class)
