@@ -66,6 +66,10 @@ Implemented manually using Redis Sorted Set (ZSET).
 ### Token Bucket Rate Limiter
 Implemented using Spring Cloud Gateway RedisRateLimiter.
 
+## Transaction Reversal
+
+Supports reversal of successful transfer transactions with balance validation, configurable reversal window checks, duplicate reversal protection, and compensation handling for partial failures.
+
 ---
 
 # Kafka Event-Driven Communication
@@ -295,6 +299,8 @@ Implemented:
 - AES Kafka Payload Encryption
 - Shared Maven Security Library
 - Daily Transfer Limit
+- Transaction reversal for successful transfer transactions
+- Reversal window validation
 
 ---
 
