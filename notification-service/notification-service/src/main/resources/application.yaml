@@ -34,3 +34,10 @@ spring:
 # Kafka secret
 aes:
   secret: ${AES_SECRET}
+
+# Kafka topic configuration
+app:
+  kafka:
+    topics:
+      transaction-completed: transaction-completed
+      transaction-reversed: transaction-reversed
