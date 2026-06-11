@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import payment.app.transaction_service.client.AccountServiceClient;
 import payment.app.transaction_service.exception.*;
 import payment.app.transaction_service.kafka.event.TransactionCompletedEvent;
+import payment.app.transaction_service.kafka.event.TransactionReversedEvent;
 import payment.app.transaction_service.kafka.producer.TransactionEventProducer;
 import payment.app.transaction_service.model.dto.*;
 import payment.app.transaction_service.model.entity.Transaction;
@@ -208,6 +209,17 @@ public class TransactionServiceImpl implements TransactionService {
             reversal.assignOriginalTransactionId(original.getTransactionId());
 
             transactionRepository.save(reversal);
+
+            TransactionReversedEvent event =
+                    new TransactionReversedEvent(
+                            reversal.getTransactionId(),
+                            reversal.getOriginalTransactionId(),
+                            reversal.getFromAccount(),
+                            reversal.getToAccount(),
+                            reversal.getAmount(),
+                            reversal.getStatus()
+                    );
+            eventProducer.publishReversal(event);
 
             // Return API response
             return toResponse(reversal, false);

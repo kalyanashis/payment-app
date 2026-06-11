@@ -33,6 +33,13 @@ spring:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
 
+# Kafka topic configuration
+app:
+  kafka:
+    topics:
+      transaction-completed: transaction-completed
+      transaction-reversed: transaction-reversed
+
 # Feign configuration (direct URL-based calls for now)
 feign:
   client:
