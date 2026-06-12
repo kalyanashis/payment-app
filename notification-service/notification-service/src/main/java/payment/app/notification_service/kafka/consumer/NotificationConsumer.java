@@ -24,16 +24,8 @@ public class NotificationConsumer {
     public void consume(ConsumerRecord<String, String> consumerRecord) {
 
         try {
-            // Read encrypted payload
-            String encryptedPayload = consumerRecord.value();
-            log.info("Encrypted Payload: {}", encryptedPayload);
 
-            // Decrypt payload
-            String decryptedJson = aesEncryptionUtil.decrypt(encryptedPayload);
-            log.info("Decrypted JSON: {}", decryptedJson);
-
-            // Convert JSON to Object
-            TransactionCompletedEvent event = objectMapper.readValue(decryptedJson, TransactionCompletedEvent.class);
+            TransactionCompletedEvent event = decryptAndSerialize(consumerRecord, TransactionCompletedEvent.class);
 
             log.info("Notification received for transaction={}", event.getTransactionId());
             log.info("Transferred ₹{} from {} to {}", event.getAmount(), event.getFromAccount(), event.getToAccount());
@@ -47,16 +39,8 @@ public class NotificationConsumer {
     public void consumeReversal(ConsumerRecord<String, String> consumerRecord) {
 
         try {
-            // Read encrypted payload
-            String encryptedPayload = consumerRecord.value();
-            log.info("Encrypted reversal payload: {}", encryptedPayload);
 
-            // Decrypt payload
-            String decryptedJson = aesEncryptionUtil.decrypt(encryptedPayload);
-            log.info("Decrypted reversal JSON: {}", decryptedJson);
-
-            // Convert JSON to Object
-            TransactionReversedEvent event = objectMapper.readValue(decryptedJson, TransactionReversedEvent.class);
+            TransactionReversedEvent event = decryptAndSerialize(consumerRecord, TransactionReversedEvent.class);
 
             log.info(
                     "Received transaction reversal event. Reversal Transaction: {}, Original Transaction: {}",
@@ -110,4 +94,21 @@ public class NotificationConsumer {
             log.info("Republished event back to original topic");
         }*/
 
+    private <T> T decryptAndSerialize(ConsumerRecord<String, String> consumerRecord, Class<T> clazz) {
+
+        try {
+            // Read encrypted payload
+            String encryptedPayload = consumerRecord.value();
+            log.info("Encrypted payload for Kafka topic {}: {}", consumerRecord.topic(), encryptedPayload);
+
+            // Decrypt payload
+            String decryptedJson = aesEncryptionUtil.decrypt(encryptedPayload);
+            log.info("Decrypted reversal JSON for Kafka topic {}: {}", consumerRecord.topic(), decryptedJson);
+
+            return objectMapper.readValue(decryptedJson, clazz);
+
+        } catch(Exception ex) {
+            throw new RuntimeException("Failed to process encrypted Kafka message", ex);
+        }
+    }
 }
