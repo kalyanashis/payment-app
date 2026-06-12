@@ -23,5 +23,5 @@ jwt:
 
 logging:
   level:
-    org.springframework.cloud.gateway: TRACE
-    reactor.netty: TRACE
+    org.springframework.cloud.gateway: INFO
+    reactor.netty: INFO
