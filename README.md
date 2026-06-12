@@ -85,6 +85,16 @@ Failed Kafka events are redirected to DLT and retried later.
 
 ---
 
+### Transaction Completed Event
+
+When a transfer is successfully completed, the Transaction Service publishes a TransactionCompletedEvent to Kafka. The Notification Service consumes the event and processes transaction notifications.
+
+### Transaction Reversal Event
+
+When a transaction reversal is successfully processed, the Transaction Service publishes a TransactionReversedEvent to Kafka. The Notification Service consumes the event, decrypts the payload, deserializes the event, and processes reversal notifications.
+
+---
+
 # Kafka Payload Encryption
 
 Kafka messages are encrypted before publishing and decrypted at the consumer side using AES encryption.
