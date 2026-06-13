@@ -421,7 +421,7 @@
           "bearer": [
             {
               "key": "token",
-              "value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJrYWx5YW4iLCJyb2xlIjoiVVNFUiIsImlhdCI6MTc4MTE1OTYyNiwiZXhwIjoxNzgxMTYzMjI2fQ.mJf90xBynS-Px0uNXgi_5Nuv7yQZReLJZUzruVkQCzU",
+              "value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJrYWx5YW4iLCJyb2xlIjoiVVNFUiIsImlhdCI6MTc4MTI3ODM2MCwiZXhwIjoxNzgxMjgxOTYwfQ.gPjDL-cCgzqyMRFKdDAxB7RinrEsFIAQ4fqNIKemiA4",
               "type": "string"
             }
           ]
@@ -439,6 +439,38 @@
             "transactions",
             "export",
             "csv",
+            "FEC7742C23"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "PDF Export",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJrYWx5YW4iLCJyb2xlIjoiVVNFUiIsImlhdCI6MTc4MTM2NDQ0NywiZXhwIjoxNzgxMzY4MDQ3fQ.YvnThoJn05J_dS5-Zm41nxmXlAm5aQcGLcfb779Smx8",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://localhost:8443/transactions/export/pdf/FEC7742C23",
+          "protocol": "https",
+          "host": [
+            "localhost"
+          ],
+          "port": "8443",
+          "path": [
+            "transactions",
+            "export",
+            "pdf",
             "FEC7742C23"
           ]
         }
