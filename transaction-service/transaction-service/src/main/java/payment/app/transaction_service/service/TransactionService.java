@@ -12,4 +12,6 @@ public interface TransactionService {
    List<TransactionResponse> getTransactions(String accountNumber);
    List<Transaction> getAllTransactions();
    TransactionResponse reverseTransaction(String transactionId);
+   byte[] exportStatementCSV(String accountNumber);
+   byte[] exportStatementPDF(String accountNumber);
 }

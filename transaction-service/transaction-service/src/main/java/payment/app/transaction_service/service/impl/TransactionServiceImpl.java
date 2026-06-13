@@ -3,6 +3,10 @@ package payment.app.transaction_service.service.impl;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.openpdf.text.Document;
+import org.openpdf.text.Paragraph;
+import org.openpdf.text.pdf.PdfPTable;
+import org.openpdf.text.pdf.PdfWriter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -18,7 +22,9 @@ import payment.app.transaction_service.model.entity.Transaction;
 import payment.app.transaction_service.repository.TransactionRepository;
 import payment.app.transaction_service.service.TransactionService;
 
+import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -257,6 +263,84 @@ public class TransactionServiceImpl implements TransactionService {
             );
 
             throw new TransactionFailedException("Reversal failed: " + ex.getMessage());
+        }
+    }
+
+    @Override
+    public byte[] exportStatementCSV(String accountNumber) {
+
+        List<Transaction> transactions = transactionRepository.getStatement(accountNumber);
+        StringBuilder csvBuilder = new StringBuilder();
+
+        if (transactions.isEmpty()) {
+            throw new TransactionNotFoundException("No transactions found for account: " + accountNumber);
+        }
+
+        csvBuilder.append("TransactionId,Type,FromAccount,ToAccount,Amount,Status,CreatedAt\n");
+
+        for(Transaction transaction : transactions) {
+            csvBuilder.append(transaction.getTransactionId())
+                    .append(",")
+                    .append(transaction.getType())
+                    .append(",")
+                    .append(transaction.getFromAccount())
+                    .append(",")
+                    .append(transaction.getToAccount())
+                    .append(",")
+                    .append(transaction.getAmount())
+                    .append(",")
+                    .append(transaction.getStatus())
+                    .append(",")
+                    .append(transaction.getCreatedAt())
+                    .append("\n");
+        }
+
+        return csvBuilder.toString().getBytes(StandardCharsets.UTF_8);
+    }
+
+    @Override
+    public byte[] exportStatementPDF(String accountNumber) {
+
+        List<Transaction> transactions = transactionRepository.getStatement(accountNumber);
+
+        if(transactions.isEmpty()) {
+            throw new TransactionNotFoundException("No transactions found for account: " + accountNumber);
+        }
+
+        try(ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            Document document = new Document();
+
+            PdfWriter.getInstance(document, outputStream);
+
+            document.open();
+
+            document.add(new Paragraph("Account Statement"));
+            document.add(new Paragraph("Account Number: " + accountNumber));
+            document.add(new Paragraph(" "));
+
+            PdfPTable table = new PdfPTable(5);
+
+            table.addCell("Transaction ID");
+            table.addCell("Type");
+            table.addCell("Amount");
+            table.addCell("Status");
+            table.addCell("Created At");
+
+            for(Transaction transaction : transactions) {
+                table.addCell(transaction.getTransactionId());
+                table.addCell(transaction.getType().name());
+                table.addCell(transaction.getAmount().toString());
+                table.addCell(transaction.getStatus());
+                table.addCell(transaction.getCreatedAt().toString());
+            }
+
+            document.add(table);
+            document.close();
+
+            return outputStream.toByteArray();
+
+        } catch(Exception ex) {
+            throw new RuntimeException("Failed to generate PDF statement", ex);
         }
     }
 

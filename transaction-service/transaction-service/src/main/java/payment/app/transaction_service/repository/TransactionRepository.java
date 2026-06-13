@@ -31,4 +31,12 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     Optional<Transaction> findByTransactionId(String transactionId);
 
     boolean existsByOriginalTransactionId(String originalTransactionId);
+
+    @Query("""
+            SELECT t FROM Transaction t
+            WHERE t.fromAccount = :accountNumber
+            OR t.toAccount = :accountNumber
+            ORDER BY t.createdAt DESC
+            """)
+    List<Transaction> getStatement(String accountNumber);
 }
