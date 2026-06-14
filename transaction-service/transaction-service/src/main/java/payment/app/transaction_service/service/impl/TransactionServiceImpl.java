@@ -25,6 +25,7 @@ import payment.app.transaction_service.service.TransactionService;
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -49,6 +50,9 @@ public class TransactionServiceImpl implements TransactionService {
 
     private static final DateTimeFormatter STATEMENT_DATE_FORMATTER =
             DateTimeFormatter.ofPattern("dd/MM/yyyy | hh:mm a", Locale.ENGLISH);
+
+    private static final DecimalFormat CURRENCY_FORMATTER =
+            new DecimalFormat("#,##0.00");
 
     @Value("${transfer.daily-limit}")
     private BigDecimal dailyTransferLimit;
@@ -275,13 +279,23 @@ public class TransactionServiceImpl implements TransactionService {
     public byte[] exportStatementCSV(String accountNumber) {
 
         List<Transaction> transactions = transactionRepository.getStatement(accountNumber);
+        BalanceResponse response = accountServiceClient.getBalance(accountNumber);
+
+        BigDecimal currentBalance = response.getBalance();
         StringBuilder csvBuilder = new StringBuilder();
 
         if (transactions.isEmpty()) {
             throw new TransactionNotFoundException("No transactions found for account: " + accountNumber);
         }
 
-        csvBuilder.append("TransactionId,Type,FromAccount,ToAccount,Amount,Status,CreatedAt\n");
+        String formattedBalance = CURRENCY_FORMATTER.format(currentBalance);
+
+        csvBuilder.append("Account Statement").append("\n");
+        csvBuilder.append("Account Number,").append(accountNumber).append("\n");
+        csvBuilder.append("Current Balance,").append("\"INR ").append(formattedBalance).append("\"").append("\n");
+        csvBuilder.append("Generated On,").append(LocalDateTime.now().format(STATEMENT_DATE_FORMATTER)).append("\n\n");
+
+        csvBuilder.append("TransactionId,Type,FromAccount,ToAccount,Amount,Status,CreatedAt").append("\n");
 
         for(Transaction transaction : transactions) {
             csvBuilder.append(transaction.getTransactionId())
@@ -307,10 +321,15 @@ public class TransactionServiceImpl implements TransactionService {
     public byte[] exportStatementPDF(String accountNumber) {
 
         List<Transaction> transactions = transactionRepository.getStatement(accountNumber);
+        BalanceResponse response = accountServiceClient.getBalance(accountNumber);
+
+        BigDecimal currentBalance = response.getBalance();
 
         if(transactions.isEmpty()) {
             throw new TransactionNotFoundException("No transactions found for account: " + accountNumber);
         }
+
+        String formattedBalance = CURRENCY_FORMATTER.format(currentBalance);
 
         try(ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             Document document = new Document();
@@ -321,6 +340,9 @@ public class TransactionServiceImpl implements TransactionService {
 
             document.add(new Paragraph("Account Statement"));
             document.add(new Paragraph("Account Number: " + accountNumber));
+            document.add(new Paragraph("Current Balance : INR " + formattedBalance));
+            document.add(new Paragraph("Generated On : " + LocalDateTime.now().format(STATEMENT_DATE_FORMATTER)));
+
             document.add(new Paragraph(" "));
 
             PdfPTable table = new PdfPTable(5);
