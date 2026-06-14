@@ -62,9 +62,11 @@ public class TransactionController {
     @GetMapping("/export/csv/{accountNumber}")
     public ResponseEntity<byte[]> exportCSV(@PathVariable String accountNumber) {
 
+        String fileName = "Account-Report_" + accountNumber + ".csv";
+
         byte[] csvData = transactionService.exportStatementCSV(accountNumber);
         HttpHeaders headers = new HttpHeaders();
-        headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=statement.csv");
+        headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + fileName);
 
         return ResponseEntity.ok()
                 .headers(headers)
@@ -75,9 +77,11 @@ public class TransactionController {
     @GetMapping("/export/pdf/{accountNumber}")
     public ResponseEntity<byte[]> exportPDF(@PathVariable String accountNumber) {
 
+        String fileName = "Account-Report_" + accountNumber + ".pdf";
+
         byte[] pdfData = transactionService.exportStatementPDF(accountNumber);
         HttpHeaders headers = new HttpHeaders();
-        headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=statement.pdf");
+        headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + fileName);
 
         return ResponseEntity.ok()
                 .headers(headers)

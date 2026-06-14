@@ -27,7 +27,9 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -44,6 +46,9 @@ public class TransactionServiceImpl implements TransactionService {
 
     private static final String SUCCESS = "SUCCESS";
     private static final String FAILED = "FAILED";
+
+    private static final DateTimeFormatter STATEMENT_DATE_FORMATTER =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy | hh:mm a", Locale.ENGLISH);
 
     @Value("${transfer.daily-limit}")
     private BigDecimal dailyTransferLimit;
@@ -291,7 +296,7 @@ public class TransactionServiceImpl implements TransactionService {
                     .append(",")
                     .append(transaction.getStatus())
                     .append(",")
-                    .append(transaction.getCreatedAt())
+                    .append(transaction.getCreatedAt().format(STATEMENT_DATE_FORMATTER))
                     .append("\n");
         }
 
@@ -331,7 +336,7 @@ public class TransactionServiceImpl implements TransactionService {
                 table.addCell(transaction.getType().name());
                 table.addCell(transaction.getAmount().toString());
                 table.addCell(transaction.getStatus());
-                table.addCell(transaction.getCreatedAt().toString());
+                table.addCell(transaction.getCreatedAt().format(STATEMENT_DATE_FORMATTER));
             }
 
             document.add(table);
