@@ -127,7 +127,7 @@ public class TransactionServiceImpl implements TransactionService {
                     accountServiceClient.credit(request.getFromAccount(), new AmountRequest(request.getAmount()));
                     log.info("Compensation rollback successful");
                 } catch(Exception exc) {
-                    log.info("Rollback not successful: {}", exc.getMessage());
+                    log.info("Rollback failed_LOCAL_VERSION: {}", exc.getMessage());
                 }
             }
             // Persist failed transaction
