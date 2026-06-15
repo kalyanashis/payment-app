@@ -70,6 +70,29 @@ Implemented using Spring Cloud Gateway RedisRateLimiter.
 
 Supports reversal of successful transfer transactions with balance validation, configurable reversal window checks, duplicate reversal protection, and compensation handling for partial failures.
 
+## Statement Export
+
+Supports account statement export in:
+
+- CSV format
+- PDF format
+
+### Export CSV Statement
+
+GET /transactions/export/csv/{accountNumber}
+
+### Export PDF Statement
+
+GET /transactions/export/pdf/{accountNumber}
+
+Each statement includes:
+
+- Account Number
+- Current Balance
+- Generated Timestamp
+- Transaction History
+- Formatted Date/Time
+
 ---
 
 # Kafka Event-Driven Communication
