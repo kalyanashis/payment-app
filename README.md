@@ -336,6 +336,7 @@ Implemented:
 - Reversal window validation
 - Transaction history APIs
 - Account statement export (CSV/PDF)
+- Account balance and timestamp in statements
 
 ---
 
