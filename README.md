@@ -334,6 +334,8 @@ Implemented:
 - Daily Transfer Limit
 - Transaction reversal for successful transfer transactions
 - Reversal window validation
+- Transaction history APIs
+- Account statement export (CSV/PDF)
 
 ---
 
