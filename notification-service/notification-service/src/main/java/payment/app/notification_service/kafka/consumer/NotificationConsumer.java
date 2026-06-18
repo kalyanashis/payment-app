@@ -85,16 +85,10 @@ public class NotificationConsumer {
             log.error("Failed transaction event received from DLT: TransactionId={}", event.getTransactionId());
             log.error("Failed event received from DLT: {}", event);
 
-            /*// Re-encrypt before republishing
-            String reEncryptedPayload = aesEncryptionUtil.encrypt(decryptedJson);
-            kafkaTemplate.send("transaction-completed", event.getTransactionId(), reEncryptedPayload);
-            log.info("Republished encrypted event back to original topic");*/
-
             // DO NOT REPUBLISH
             log.info("DLT message logged successfully for investigation");
 
         } catch (Exception ex) {
-            //throw new RuntimeException("Failed to process DLT event", ex);
             log.error("Failed to process DLT message", ex);
         }
     }
@@ -115,29 +109,13 @@ public class NotificationConsumer {
             log.error("Transaction reversal event received from DLT: TransactionId={}", event.getTransactionId());
             log.error("Failed event received from DLT: {}", event);
 
-            /*// Re-encrypt before republishing
-            String reEncryptedPayload = aesEncryptionUtil.encrypt(decryptedJson);
-            kafkaTemplate.send("transaction-completed", event.getTransactionId(), reEncryptedPayload);
-            log.info("Republished encrypted event back to original topic");*/
-
             // DO NOT REPUBLISH
             log.info("DLT message logged successfully for investigation");
 
         } catch (Exception ex) {
-            //throw new RuntimeException("Failed to process DLT event", ex);
             log.error("Failed to process DLT message", ex);
         }
     }
-
-        /*@KafkaListener(topics = "transaction-completed-dlt", groupId = "dlt-group-v3")
-        public void consumeDlt (TransactionCompletedEvent event){
-
-            log.error("Received FAILED event in DLT: {}", event);
-
-            kafkaTemplate.send("transaction-completed", event.getTransactionId(), event);
-
-            log.info("Republished event back to original topic");
-        }*/
 
     private <T> T decryptAndDeserialize(ConsumerRecord<String, String> consumerRecord, Class<T> clazz) {
 
