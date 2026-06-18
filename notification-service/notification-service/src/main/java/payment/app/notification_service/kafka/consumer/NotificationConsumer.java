@@ -11,6 +11,9 @@ import payment.app.common_security.util.AESEncryptionUtil;
 import payment.app.notification_service.kafka.event.TransactionCompletedEvent;
 import payment.app.notification_service.kafka.event.TransactionReversedEvent;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -23,12 +26,19 @@ public class NotificationConsumer {
     @KafkaListener(topics = "${app.kafka.topics.transaction-completed}", groupId = "notification-group")
     public void consume(ConsumerRecord<String, String> consumerRecord) {
 
+        log.info("Processing started at {}", LocalDateTime.now());
+
         try {
 
-            TransactionCompletedEvent event = decryptAndSerialize(consumerRecord, TransactionCompletedEvent.class);
+            TransactionCompletedEvent event = decryptAndDeserialize(consumerRecord, TransactionCompletedEvent.class);
 
             log.info("Notification received for transaction={}", event.getTransactionId());
             log.info("Transferred ₹{} from {} to {}", event.getAmount(), event.getFromAccount(), event.getToAccount());
+
+            //Simulate consumer failure (for DLT testing purpose)
+            if (event.getAmount().compareTo(BigDecimal.valueOf(1000)) >= 0) {
+                throw new RuntimeException("Simulated notification failure");
+            }
 
         } catch (Exception ex) {
             throw new RuntimeException("Failed to process encrypted Kafka message", ex);
@@ -40,7 +50,7 @@ public class NotificationConsumer {
 
         try {
 
-            TransactionReversedEvent event = decryptAndSerialize(consumerRecord, TransactionReversedEvent.class);
+            TransactionReversedEvent event = decryptAndDeserialize(consumerRecord, TransactionReversedEvent.class);
 
             log.info(
                     "Received transaction reversal event. Reversal Transaction: {}, Original Transaction: {}",
@@ -59,28 +69,63 @@ public class NotificationConsumer {
         }
     }
 
-    @KafkaListener(topics = "transaction-completed-dlt", groupId = "dlt-group-v3")
+    @KafkaListener(topics = "transaction-completed-dlt", groupId = "dlt-group")
     public void consumeDlt(ConsumerRecord<String, String> consumerRecord) {
 
         try {
             // Read encrypted payload
             String encryptedPayload = consumerRecord.value();
-            log.error("Received encrypted FAILED event in DLT: {}", encryptedPayload);
+            log.error("Message moved to DLT. Topic={}, Key={}", consumerRecord.topic(), consumerRecord.key());
 
             // Decrypt payload
             String decryptedJson = aesEncryptionUtil.decrypt(encryptedPayload);
 
             // Convert JSON to Object
             TransactionCompletedEvent event = objectMapper.readValue(decryptedJson, TransactionCompletedEvent.class);
-            log.error("Decrypted FAILED event from DLT: {}", event);
+            log.error("Failed transaction event received from DLT: TransactionId={}", event.getTransactionId());
+            log.error("Failed event received from DLT: {}", event);
 
-            // Re-encrypt before republishing
+            /*// Re-encrypt before republishing
             String reEncryptedPayload = aesEncryptionUtil.encrypt(decryptedJson);
             kafkaTemplate.send("transaction-completed", event.getTransactionId(), reEncryptedPayload);
-            log.info("Republished encrypted event back to original topic");
+            log.info("Republished encrypted event back to original topic");*/
+
+            // DO NOT REPUBLISH
+            log.info("DLT message logged successfully for investigation");
 
         } catch (Exception ex) {
-            throw new RuntimeException("Failed to process DLT event", ex);
+            //throw new RuntimeException("Failed to process DLT event", ex);
+            log.error("Failed to process DLT message", ex);
+        }
+    }
+
+    @KafkaListener(topics = "transaction-reversed-dlt", groupId = "dlt-group")
+    public void consumeReversedDlt(ConsumerRecord<String, String> consumerRecord) {
+
+        try {
+            // Read encrypted payload
+            String encryptedPayload = consumerRecord.value();
+            log.error("Message moved to DLT. Topic={}, Key={}", consumerRecord.topic(), consumerRecord.key());
+
+            // Decrypt payload
+            String decryptedJson = aesEncryptionUtil.decrypt(encryptedPayload);
+
+            // Convert JSON to Object
+            TransactionReversedEvent event = objectMapper.readValue(decryptedJson, TransactionReversedEvent.class);
+            log.error("Transaction reversal event received from DLT: TransactionId={}", event.getTransactionId());
+            log.error("Failed event received from DLT: {}", event);
+
+            /*// Re-encrypt before republishing
+            String reEncryptedPayload = aesEncryptionUtil.encrypt(decryptedJson);
+            kafkaTemplate.send("transaction-completed", event.getTransactionId(), reEncryptedPayload);
+            log.info("Republished encrypted event back to original topic");*/
+
+            // DO NOT REPUBLISH
+            log.info("DLT message logged successfully for investigation");
+
+        } catch (Exception ex) {
+            //throw new RuntimeException("Failed to process DLT event", ex);
+            log.error("Failed to process DLT message", ex);
         }
     }
 
@@ -94,7 +139,7 @@ public class NotificationConsumer {
             log.info("Republished event back to original topic");
         }*/
 
-    private <T> T decryptAndSerialize(ConsumerRecord<String, String> consumerRecord, Class<T> clazz) {
+    private <T> T decryptAndDeserialize(ConsumerRecord<String, String> consumerRecord, Class<T> clazz) {
 
         try {
             // Read encrypted payload
