@@ -93,6 +93,10 @@ Each statement includes:
 - Transaction History
 - Formatted Date/Time
 
+## Transactional Outbox Pattern
+
+Implements the Transactional Outbox Pattern for reliable event publishing by persisting business transactions and corresponding Outbox events atomically within the same database transaction. A scheduled Outbox Publisher periodically processes **PENDING** events, publishes them to Kafka and marks them as **PUBLISHED** upon successful delivery, preventing dual-write inconsistencies and ensuring reliable event propagation.
+
 ---
 
 # Kafka Event-Driven Communication
@@ -151,6 +155,36 @@ Implemented using:
 - KeyResolver
 
 ---
+
+# Outbox Pattern
+
+## Event Publishing Flow (Outbox Pattern)
+
+```text
+Client
+   │
+   ▼
+Transaction Service
+   │
+   ├── Save Transaction
+   └── Save Outbox Event (PENDING)
+           │
+           ▼
+      MySQL Outbox Table
+           │
+           ▼
+ @Scheduled Outbox Publisher
+           │
+           ▼
+     Publish to Kafka
+           │
+           ▼
+Mark Outbox Event as PUBLISHED
+           │
+           ▼
+      Notification Service
+```
+This implementation ensures that business transactions and event persistence occur atomically, preventing dual-write inconsistencies and enabling reliable event delivery through asynchronous publishing.
 
 # Security Features
 
