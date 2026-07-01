@@ -18,7 +18,7 @@ spring:
       port: 6379
 
 jwt:
-  secret: bXlTdXBlclNlY3JldEtleUZvckp3dFNpZ25pbmcxMjM0NTY=
+  secret: 8qPhCjzBxkJnWqTk/WdeG/BHS8yNI7DXEdgBjZHl5MY=
   expiration: 3600000
 
 logging:

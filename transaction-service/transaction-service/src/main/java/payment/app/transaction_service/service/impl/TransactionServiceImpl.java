@@ -1,5 +1,7 @@
 package payment.app.transaction_service.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +20,9 @@ import payment.app.transaction_service.kafka.event.TransactionCompletedEvent;
 import payment.app.transaction_service.kafka.event.TransactionReversedEvent;
 import payment.app.transaction_service.kafka.producer.TransactionEventProducer;
 import payment.app.transaction_service.model.dto.*;
+import payment.app.transaction_service.model.entity.OutboxEvent;
 import payment.app.transaction_service.model.entity.Transaction;
+import payment.app.transaction_service.repository.OutboxEventRepository;
 import payment.app.transaction_service.repository.TransactionRepository;
 import payment.app.transaction_service.service.TransactionService;
 
@@ -43,7 +47,9 @@ public class TransactionServiceImpl implements TransactionService {
 
     private final AccountServiceClient accountServiceClient;
     private final TransactionRepository transactionRepository;
+    private final OutboxEventRepository outboxEventRepository;
     private final TransactionEventProducer eventProducer;
+    private final ObjectMapper objectMapper;
 
     private static final String SUCCESS = "SUCCESS";
     private static final String FAILED = "FAILED";
@@ -64,7 +70,7 @@ public class TransactionServiceImpl implements TransactionService {
     @CacheEvict(value = "transactions", key = "#request.fromAccount")
     public TransactionResponse transfer(TransferRequest request, String token, String idempotencyKey) {
 
-        String transactionId = generateTransactionId();
+        String transactionId = generateId("TXN");
         boolean debitDone = false;
 
         //idempotency check
@@ -116,7 +122,7 @@ public class TransactionServiceImpl implements TransactionService {
                         transaction.getAmount(),
                         transaction.getStatus()
                    );
-            eventProducer.publish(event);
+            saveOutboxEvent(event, OutboxEventType.TRANSACTION_COMPLETED);
 
             return toResponse(transaction, false);
         } catch(FeignException | TransferProcessingException ex) {
@@ -197,7 +203,7 @@ public class TransactionServiceImpl implements TransactionService {
         }
 
         // Generate a new transaction ID for the reversal transaction
-        String reversalTransactionId = generateTransactionId();
+        String reversalTransactionId = generateId("TXN");
 
         boolean debitDone = false;
 
@@ -234,7 +240,7 @@ public class TransactionServiceImpl implements TransactionService {
                             reversal.getAmount(),
                             reversal.getStatus()
                     );
-            eventProducer.publishReversal(event);
+            saveOutboxEvent(event, OutboxEventType.TRANSACTION_REVERSED);
 
             // Return API response
             return toResponse(reversal, false);
@@ -414,14 +420,39 @@ public class TransactionServiceImpl implements TransactionService {
                 replay);
     }
 
-    private String generateTransactionId() {
+    private String generateId(String prefix) {
 
-        String random =  UUID.randomUUID()
-                        .toString()
-                        .replace("-", "")
-                        .substring(0, 12)
-                        .toUpperCase();
+        String random = UUID.randomUUID()
+                .toString()
+                .replace("-", "")
+                .substring(0, 12)
+                .toUpperCase();
 
-        return "TXN-" + random;
+        return prefix + "-" + random;
+    }
+
+    private void saveOutboxEvent(Object event, OutboxEventType eventType) {
+
+        try {
+            String payload = objectMapper.writeValueAsString(event);
+
+            OutboxEvent outboxEvent = new OutboxEvent(
+                    generateId("OUTBOX"),
+                    eventType,
+                    payload,
+                    OutboxStatusType.PENDING,
+                    LocalDateTime.now()
+            );
+            outboxEventRepository.save(outboxEvent);
+
+            log.info(
+                    "Outbox event saved successfully. EventId={}, EventType={}",
+                    outboxEvent.getEventId(),
+                    outboxEvent.getEventType()
+            );
+
+        } catch(JsonProcessingException ex) {
+            throw new RuntimeException("Failed to serialize outbox event", ex);
+        }
     }
 }

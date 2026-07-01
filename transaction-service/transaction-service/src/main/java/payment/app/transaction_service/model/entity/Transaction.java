@@ -45,7 +45,7 @@ public class Transaction {
     private LocalDateTime createdAt;
 
     protected Transaction() {
-        // JPA
+        // Required by JPA
     }
 
     public Transaction(String transactionId,
