@@ -5,6 +5,22 @@ spring:
   application:
     name: notification-service
 
+  datasource:
+    url: jdbc:mysql://localhost:3306/notificationdb
+    username: root
+    password: data_archive
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+
   kafka:
     bootstrap-servers: localhost:9092
 

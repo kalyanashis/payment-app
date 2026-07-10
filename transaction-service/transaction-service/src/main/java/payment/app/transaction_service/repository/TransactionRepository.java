@@ -3,6 +3,7 @@ package payment.app.transaction_service.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 import payment.app.transaction_service.model.dto.TransactionType;
 import payment.app.transaction_service.model.entity.Transaction;
 
@@ -11,6 +12,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+@Repository
 public interface TransactionRepository extends JpaRepository<Transaction, Long> {
 
     List<Transaction> findByFromAccountOrToAccount(String fromAccount, String toAccount);

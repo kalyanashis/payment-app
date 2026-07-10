@@ -10,6 +10,8 @@ import org.springframework.stereotype.Service;
 import payment.app.common_security.util.AESEncryptionUtil;
 import payment.app.notification_service.kafka.event.TransactionCompletedEvent;
 import payment.app.notification_service.kafka.event.TransactionReversedEvent;
+import payment.app.notification_service.model.ProcessedEvent_old;
+import payment.app.notification_service.repository.ProcessedEventRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -22,6 +24,7 @@ public class NotificationConsumer {
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
     private final AESEncryptionUtil aesEncryptionUtil;
+    private final ProcessedEventRepository processedEventRepository;
 
     @KafkaListener(topics = "${app.kafka.topics.transaction-completed}", groupId = "notification-group")
     public void consume(ConsumerRecord<String, String> consumerRecord) {
@@ -33,12 +36,21 @@ public class NotificationConsumer {
             TransactionCompletedEvent event = decryptAndDeserialize(consumerRecord, TransactionCompletedEvent.class);
 
             log.info("Notification received for transaction={}", event.getTransactionId());
-            log.info("Transferred ₹{} from {} to {}", event.getAmount(), event.getFromAccount(), event.getToAccount());
+
+            if (processedEventRepository.existsByEventId(event.getTransactionId())) {
+                log.info("Duplicate event received. Ignoring transaction={}", event.getTransactionId());
+                return;
+            }
 
             //Simulate consumer failure (for DLT testing purpose)
             if (event.getAmount().compareTo(BigDecimal.valueOf(1000)) >= 0) {
                 throw new RuntimeException("Simulated notification failure");
             }
+
+            log.info("Transferred ₹{} from {} to {}", event.getAmount(), event.getFromAccount(), event.getToAccount());
+
+            processedEventRepository.save(new ProcessedEvent_old(event.getTransactionId()));
+            log.info("Marked transaction={} as processed", event.getTransactionId());
 
         } catch (Exception ex) {
             throw new RuntimeException("Failed to process encrypted Kafka message", ex);

@@ -24,7 +24,7 @@ public class OutboxPublisher {
     private final ObjectMapper objectMapper;
     private final TransactionEventProducer eventProducer;
 
-    @Scheduled(fixedDelay = 5000)
+    @Scheduled(fixedDelay = 10000)
     public void publishPendingEvents() {
 
         List<OutboxEvent> pendingEvents = outboxEventRepository.findByStatusOrderByCreatedAtAsc(OutboxStatusType.PENDING);

@@ -41,7 +41,7 @@ public class TransactionEventProducer {
 
             //Send encrypted payload
             kafkaTemplate.send(transactionCompletedTopic, event.getTransactionId(), encryptedPayload);
-            log.info("Transaction event published successfully: {}", event.getTransactionId());
+            log.info("Transaction event queued for Kafka publishing: {}", event.getTransactionId());
 
         } catch (JsonProcessingException ex) {
             throw new RuntimeException("Failed to serialize event", ex);
@@ -63,7 +63,7 @@ public class TransactionEventProducer {
 
             //Send encrypted payload
             kafkaTemplate.send(transactionReversedTopic, event.getTransactionId(), encryptedPayload);
-            log.info("Transaction reversal event published successfully: {}", event.getTransactionId());
+            log.info("Transaction reversal event queued for Kafka publishing: {}", event.getTransactionId());
 
         } catch (JsonProcessingException ex) {
             throw new RuntimeException("Failed to serialize transaction reversal event", ex);

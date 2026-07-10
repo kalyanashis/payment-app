@@ -21,3 +21,6 @@ out/
 
 # VS Code
 .vscode/
+
+# Java
+**/JwtKeyGenerator.java
