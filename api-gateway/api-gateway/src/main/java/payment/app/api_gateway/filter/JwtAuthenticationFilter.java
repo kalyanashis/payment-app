@@ -1,13 +1,16 @@
 package payment.app.api_gateway.filter;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
@@ -16,6 +19,7 @@ import payment.app.api_gateway.service.SlidingWindowRateLimiterService;
 import reactor.core.publisher.Mono;
 
 @Component
+@Slf4j
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
@@ -26,7 +30,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
 
-        System.out.println("JWT Filter Hit");
+        log.debug("JWT filter invoked");
 
         String path = exchange.getRequest().getURI().getPath();
 
@@ -39,63 +43,59 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                 .getHeaders()
                 .getFirst(HttpHeaders.AUTHORIZATION);
 
-        System.out.println("Authorization: " + authHeader);
-
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
 
-            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-            return exchange.getResponse().setComplete();
+            log.warn("Missing or invalid Authorization header");
+            return unauthorized(exchange);
         }
 
         String token = authHeader.substring(7);
 
         if (!jwtUtil.validateToken(token)) {
-            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-            return exchange.getResponse().setComplete();
+            log.warn("Token validation failed");
+            return unauthorized(exchange);
         }
 
         String blacklisted = redisTemplate.opsForValue().get(token);
 
         if(blacklisted != null) {
-            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-            return  exchange.getResponse().setComplete();
+            log.warn("Blacklisted JWT received");
+            return unauthorized(exchange);
         }
 
         // Extract claims
-        Claims claims = null;
         try {
-            claims = jwtUtil.extractClaims(token);
-            System.out.println("Claims: " + claims);
-        } catch (Exception e) {
-            System.out.println("JWT ERROR: " + e.getMessage());
-            e.printStackTrace();
+            Claims claims = jwtUtil.extractClaims(token);
+
+            String userId = claims.getSubject();
+            String role = claims.get("role", String.class);
+
+            log.debug("Authenticated user={}, role={}", userId, role);
+
+            // FOR RATE LIMITER
+            if (path.equals("/transactions/transfer")) {
+                log.info("Transfer API invoked");
+            }
+
+            // Add headers (Context Enrichment)
+            ServerHttpRequest mutatedRequest = exchange.getRequest()
+                    .mutate()
+                    .header("X-User-Id", userId)
+                    .header("X-User-Role", role)
+                    .build();
+
+            // Continue filter chain with modified request
+            return chain.filter(exchange.mutate().request(mutatedRequest).build());
+
+        } catch (JwtException | IllegalArgumentException ex) {
+            log.warn("JWT validation failed: {}", ex.getMessage());
+            return unauthorized(exchange);
         }
+    }
 
-        String userId = claims.getSubject();
-        String role = claims.get("role", String.class);
-
-        // FOR RATE LIMITER
-        if(path.equals("/transactions/transfer")) {
-
-            System.out.println("The Transfer path is: " + exchange.getRequest().getURI().getPath());
-            //boolean allowed = rateLimiterService.isAllowed(userId);
-
-            /*if(!allowed) {
-                exchange.getResponse().setStatusCode(HttpStatus.TOO_MANY_REQUESTS);
-                return exchange.getResponse().setComplete();
-            }*/
-        }
-
-        // Add headers (Context Enrichment)
-        ServerHttpRequest mutatedRequest = exchange.getRequest()
-                .mutate()
-                .header("X-User-Id", userId)
-                .header("X-User-Role", role)
-                .build();
-
-        // Continue filter chain with modified request
-        //return chain.filter(exchange);
-        return chain.filter(exchange.mutate().request(mutatedRequest).build());
+    private Mono<Void> unauthorized(ServerWebExchange exchange) {
+        exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+        return exchange.getResponse().setComplete();
     }
 
     @Override
