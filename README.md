@@ -97,6 +97,10 @@ Each statement includes:
 
 Implements the Transactional Outbox Pattern for reliable event publishing by persisting business transactions and corresponding Outbox events atomically within the same database transaction. A scheduled Outbox Publisher periodically processes **PENDING** events, publishes them to Kafka and marks them as **PUBLISHED** upon successful delivery, preventing dual-write inconsistencies and ensuring reliable event propagation.
 
+## Idempotent Consumer
+
+Prevents duplicate Kafka message processing by maintaining a `processed_events` table in the Notification Service. Before processing an incoming Kafka event, the consumer checks whether the transaction has already been processed using its unique transaction ID. If the event is new, it is processed successfully and recorded in the `processed_events` table. If the same event is received again due to retries, Outbox republishing, or duplicate Kafka delivery, it is safely ignored, ensuring that notifications are sent exactly once from the application's perspective.
+
 ---
 
 # Kafka Event-Driven Communication
@@ -185,6 +189,41 @@ Mark Outbox Event as PUBLISHED
       Notification Service
 ```
 This implementation ensures that business transactions and event persistence occur atomically, preventing dual-write inconsistencies and enabling reliable event delivery through asynchronous publishing.
+
+## Event Processing Flow (Idempotent Consumer)
+
+```text
+Kafka
+   │
+   ▼
+Notification Consumer
+   │
+   ▼
+Decrypt & Deserialize Event
+   │
+   ▼
+Check processed_events Table
+   │
+   ├── Already Processed?
+   │       │
+   │       ├── Yes ──► Ignore Duplicate Event
+   │       │
+   │       └── No
+   │
+   ▼
+Process Notification
+   │
+   ▼
+Save Transaction ID to processed_events
+```
+
+### Benefits
+
+* Prevents duplicate notification processing.
+* Handles duplicate Kafka message delivery safely.
+* Works seamlessly with the Transactional Outbox Pattern.
+* Supports reliable retries without processing the same event multiple times.
+* Improves fault tolerance in event-driven microservices.
 
 # Security Features
 
