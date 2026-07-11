@@ -394,22 +394,34 @@ postman/payment-app-postman-collection.json
 
 ---
 
-# Current Status
+# Current Implementation Status
 
-Implemented:
-- JWT Authentication
-- API Gateway Routing
-- Redis Rate Limiting
-- Kafka Integration
-- Dead Letter Topic (DLT)
-- AES Kafka Payload Encryption
-- Shared Maven Security Library
-- Daily Transfer Limit
-- Transaction reversal for successful transfer transactions
-- Reversal window validation
-- Transaction history APIs
-- Account statement export (CSV/PDF)
-- Account balance and timestamp in statements
+### Security
+
+* JWT Authentication
+* API Gateway Routing
+* Redis Rate Limiting
+* Shared Maven Security Library
+
+### Event-Driven Architecture
+
+* Kafka Integration
+* AES Kafka Payload Encryption
+* Dead Letter Topic (DLT)
+* Transactional Outbox Pattern
+* Idempotent Kafka Consumer
+
+### Payment Features
+
+* Daily Transfer Limit
+* Transaction Reversal for Successful Transfer Transactions
+* Reversal Window Validation
+
+### Reporting
+
+* Transaction History APIs
+* Account Statement Export (CSV/PDF)
+* Account Balance and Timestamp in Statements
 
 ---
 
