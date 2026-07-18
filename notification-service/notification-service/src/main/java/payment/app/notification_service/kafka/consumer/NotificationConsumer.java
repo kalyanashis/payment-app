@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import payment.app.common_security.util.AESEncryptionUtil;
 import payment.app.notification_service.kafka.event.TransactionCompletedEvent;
 import payment.app.notification_service.kafka.event.TransactionReversedEvent;
-import payment.app.notification_service.model.ProcessedEvent_old;
+import payment.app.notification_service.model.entity.ProcessedEvent;
 import payment.app.notification_service.repository.ProcessedEventRepository;
 
 import java.math.BigDecimal;
@@ -49,7 +49,7 @@ public class NotificationConsumer {
 
             log.info("Transferred ₹{} from {} to {}", event.getAmount(), event.getFromAccount(), event.getToAccount());
 
-            processedEventRepository.save(new ProcessedEvent_old(event.getTransactionId()));
+            processedEventRepository.save(new ProcessedEvent(event.getTransactionId()));
             log.info("Marked transaction={} as processed", event.getTransactionId());
 
         } catch (Exception ex) {
@@ -69,12 +69,16 @@ public class NotificationConsumer {
                     event.getTransactionId(),
                     event.getOriginalTransactionId()
             );
-            log.info(
-                    "Reversed ₹{} from {} to {}",
-                    event.getAmount(),
-                    event.getFromAccount(),
-                    event.getToAccount()
-            );
+
+            if (processedEventRepository.existsByEventId(event.getTransactionId())) {
+                log.info("Duplicate reversal event received. Ignoring transaction={}", event.getTransactionId());
+                return;
+            }
+
+            log.info("Reversed ₹{} from {} to {}", event.getAmount(), event.getFromAccount(), event.getToAccount());
+
+            processedEventRepository.save(new ProcessedEvent(event.getTransactionId()));
+            log.info("Marked reversal transaction={} as processed", event.getTransactionId());
 
         } catch (Exception ex) {
             throw new RuntimeException("Failed to process transaction reversal event", ex);

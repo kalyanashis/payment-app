@@ -48,13 +48,27 @@ public class OutboxPublisher {
 
                         log.info("Deserialized TransactionCompletedEvent: {}", event);
 
-                        eventProducer.publish(event);
+                        // 1. Pass data to the updated blocking method
+                        boolean success = eventProducer.publish(event);
 
-                        outboxEvent.markAsPublished();
-                        outboxEventRepository.save(outboxEvent);
+                        if (success) {
+                            outboxEvent.markAsPublished();
+                            outboxEventRepository.save(outboxEvent);
+                            log.info("Published Outbox Event for transaction completion. EventId={}",
+                                    outboxEvent.getEventId()
+                            );
+                        } else {
+                            log.warn(
+                                    "Kafka delivery for transaction event failed for EventId={}. " +
+                                            "Event remains PENDING and will be retried in the next scheduler run.",
+                                    outboxEvent.getEventId()
+                            );
+                            // CRITICAL: We break out of the processing loop entirely.
+                            // We do NOT call markAsPublished(). The record stays PENDING.
+                            // The next scheduler run (10 seconds later) will attempt to send this exact message again.
+                            return;
+                        }
 
-                        log.info("Published Outbox Event for transaction completion. EventId={}",
-                                outboxEvent.getEventId());
                     }
                     case TRANSACTION_REVERSED -> {
                         TransactionReversedEvent event = objectMapper.readValue(
@@ -63,13 +77,26 @@ public class OutboxPublisher {
 
                         log.info("Deserialized TransactionReversedEvent: {}", event);
 
-                        eventProducer.publishReversal(event);
+                        boolean success = eventProducer.publishReversal(event);
 
-                        outboxEvent.markAsPublished();
-                        outboxEventRepository.save(outboxEvent);
+                        if (success) {
+                            outboxEvent.markAsPublished();
+                            outboxEventRepository.save(outboxEvent);
+                            log.info("Published Outbox Event for transaction reversal completion. EventId={}",
+                                    outboxEvent.getEventId()
+                            );
+                        } else {
+                            log.warn(
+                                    "Kafka delivery for transaction reversal event failed for EventId={}. " +
+                                            "Event remains PENDING and will be retried in the next scheduler run.",
+                                    outboxEvent.getEventId()
+                            );
+                            // CRITICAL: We break out of the processing loop entirely.
+                            // We do NOT call markAsPublished(). The record stays PENDING.
+                            // The next scheduler run (10 seconds later) will attempt to send this exact message again.
+                            return;
+                        }
 
-                        log.info("Published Outbox Event for transaction reversal. EventId={}",
-                                outboxEvent.getEventId());
                     }
                     default -> log.warn("Unknown Outbox Event Type: {}", outboxEvent.getEventType());
                 }

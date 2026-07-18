@@ -33,6 +33,9 @@ spring:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
 
+      acks: all
+      retries: 3
+
 # Kafka topic configuration
 app:
   kafka:
