@@ -271,6 +271,7 @@ transfer:
 
 # Project Structure
 
+```text
 payment-app/
 │
 ├── api-gateway/              # API Gateway and request routing
@@ -287,6 +288,7 @@ payment-app/
 ├── .env.example              # Environment variable template
 ├── pom.xml                   # Parent Maven project
 └── README.md                 # Project documentation
+```
 
 ---
 
