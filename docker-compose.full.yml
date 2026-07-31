@@ -1,0 +1,156 @@
+version: '3.8'
+
+services:
+
+  # ==========================================================
+  # Infrastructure Services
+  # Kafka and Redis required by the application
+  # ==========================================================
+
+  kafka:
+    image: apache/kafka:3.9.2
+    container_name: kafka
+
+    ports:
+      - "9092:9092"
+
+    environment:
+      KAFKA_NODE_ID: 1
+
+      KAFKA_PROCESS_ROLES: broker,controller
+
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  redis:
+    image: redis:7.2
+    container_name: redis
+    ports:
+      - "6379:6379"
+
+
+  # ==========================================================
+  # Business Microservices
+  # Core payment processing services
+  # ==========================================================
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: auth-service/auth-service/Dockerfile
+
+    container_name: auth-service
+
+    environment: 
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_NAME: ${AUTH_DB_NAME}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+    
+    ports:
+      - "8081:8081"
+
+    depends_on:
+      - redis
+
+  account-service:
+    build:
+      context: .
+      dockerfile: account-service/account-service/Dockerfile
+
+    container_name: account-service
+
+    environment:
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_NAME: ${ACCOUNT_DB_NAME}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+
+    ports:
+      - "8082:8082"
+
+  transaction-service:
+    build:
+      context: .
+      dockerfile: transaction-service/transaction-service/Dockerfile
+
+    container_name: transaction-service
+
+    environment:
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_NAME: ${TRANSACTION_DB_NAME}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
+      ACCOUNT_SERVICE_URL: ${ACCOUNT_SERVICE_URL}
+      AES_SECRET: ${AES_SECRET}
+
+    ports:
+      - "8083:8083"
+
+    depends_on:
+      - account-service
+      - redis
+      - kafka
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: notification-service/notification-service/Dockerfile
+
+    container_name: notification-service
+
+    environment:
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_NAME: ${NOTIFICATION_DB_NAME}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
+      AES_SECRET: ${AES_SECRET}
+
+    ports:
+      - "8084:8084"
+
+    depends_on:
+      - kafka
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api-gateway/api-gateway/Dockerfile
+
+    container_name: api-gateway
+
+    environment:
+      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL}
+      ACCOUNT_SERVICE_URL: ${ACCOUNT_SERVICE_URL}
+      TRANSACTION_SERVICE_URL: ${TRANSACTION_SERVICE_URL}
+      SSL_KEYSTORE_PASSWORD: ${SSL_KEYSTORE_PASSWORD}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      JWT_SECRET: ${JWT_SECRET}
+
+    ports:
+      - "8443:8443"
+
+    depends_on:
+      - auth-service
+      - account-service
+      - transaction-service
+      - redis

@@ -22,5 +22,5 @@ out/
 # VS Code
 .vscode/
 
-# Java
+# Local Development Utilities
 **/JwtKeyGenerator.java
