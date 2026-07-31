@@ -17,6 +17,21 @@ The application follows a distributed microservices architecture where requests 
 - notification-service
 - common-security (shared encryption library)
 
+## Docker Compose Deployment
+
+The application is containerized using Docker and orchestrated with Docker Compose. A single `docker-compose.full.yml` configuration starts all application services along with the required infrastructure components.
+
+Infrastructure components:
+- Apache Kafka
+- Redis
+
+Application services:
+- API Gateway
+- Auth Service
+- Account Service
+- Transaction Service
+- Notification Service
+
 ---
 
 # Tech Stack
@@ -43,6 +58,11 @@ The application follows a distributed microservices architecture where requests 
 ## Security
 - JWT Authentication
 - AES Payload Encryption
+
+## DevOps / Containerization
+
+- Docker
+- Docker Compose
 
 ---
 
@@ -251,16 +271,22 @@ transfer:
 
 # Project Structure
 
-```text
 payment-app/
-
-├── api-gateway
-├── auth-service
-├── account-service
-├── transaction-service
-├── notification-service
-├── common-security
-```
+│
+├── api-gateway/              # API Gateway and request routing
+├── auth-service/             # Authentication and JWT management
+├── account-service/          # Account management operations
+├── transaction-service/      # Fund transfers, Outbox Pattern, transaction reversal
+├── notification-service/     # Kafka consumer and notification processing
+├── common-security/          # Shared AES encryption library
+│
+├── database/                 # Database schema and scripts
+├── postman/                  # Postman collection
+│
+├── docker-compose.full.yml   # Docker Compose configuration
+├── .env.example              # Environment variable template
+├── pom.xml                   # Parent Maven project
+└── README.md                 # Project documentation
 
 ---
 
@@ -268,24 +294,42 @@ payment-app/
 
 ## Prerequisites
 
-- Java 21
-- Maven
-- MySQL
-- Redis
-- Apache Kafka
-- Zookeeper
+- Docker
+- Docker Compose
+- MySQL running on the host machine
 
-## Start Order
+## Environment Configuration
 
-1. Redis
-2. Zookeeper
-3. Kafka
-4. MySQL
-5. auth-service
-6. account-service
-7. transaction-service
-8. notification-service
-9. api-gateway
+Copy:
+
+```bash
+cp .env.example .env
+```
+
+Update the following values:
+
+- DB_PASSWORD
+- JWT_SECRET
+- AES_SECRET
+- SSL_KEYSTORE_PASSWORD
+
+## Build and Start
+
+```bash
+docker compose -f docker-compose.full.yml up --build
+```
+
+## Detached Mode
+
+```bash
+docker compose -f docker-compose.full.yml up -d --build
+```
+
+## Stop
+
+```bash
+docker compose -f docker-compose.full.yml down
+```
 
 ---
 
@@ -303,21 +347,9 @@ payment-app/
 
 ---
 
-## Infrastructure Setup
-
-This project uses Docker Compose to start the required infrastructure services.
-
-### Start Kafka and Redis
-
-```bash
-docker compose up -d
-```
-
----
-
 ## Database Setup
 
-The project uses MySQL as the primary database.
+> **Note:** MySQL is expected to run on the host machine. The Dockerized services connect to it using `host.docker.internal`, as configured in `.env.example`.
 
 ### Import Schema
 
@@ -422,6 +454,12 @@ postman/payment-app-postman-collection.json
 * Transaction History APIs
 * Account Statement Export (CSV/PDF)
 * Account Balance and Timestamp in Statements
+
+### DevOps
+
+* Multi-stage Dockerfiles
+* Docker Compose orchestration
+* Environment-based configuration
 
 ---
 
