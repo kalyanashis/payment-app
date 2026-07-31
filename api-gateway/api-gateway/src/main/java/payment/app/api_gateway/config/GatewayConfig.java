@@ -1,5 +1,6 @@
 package payment.app.api_gateway.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.ratelimit.KeyResolver;
 import org.springframework.cloud.gateway.filter.ratelimit.RedisRateLimiter;
 import org.springframework.cloud.gateway.route.RouteLocator;
@@ -14,6 +15,15 @@ import reactor.core.publisher.Mono;
 @Configuration
 @EnableWebFluxSecurity
 public class GatewayConfig {
+
+    @Value("${services.auth.url}")
+    private String authServiceUrl;
+
+    @Value("${services.account.url}")
+    private String accountServiceUrl;
+
+    @Value("${services.transaction.url}")
+    private String transactionServiceUrl;
 
     @Bean
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
@@ -36,12 +46,12 @@ public class GatewayConfig {
                 //Auth Service
                 .route("auth-service", r -> r
                         .path("/auth/**")
-                        .uri("http://localhost:8081"))
+                        .uri(authServiceUrl))
 
                 //Account Service
                 .route("account-service", r -> r
                         .path("/accounts/**")
-                        .uri("http://localhost:8082"))
+                        .uri(accountServiceUrl))
 
                 //Transaction Service
                 .route("transaction-service", r -> r
@@ -52,7 +62,7 @@ public class GatewayConfig {
                                     c.setKeyResolver(userKeyResolver);
                                 }
                         ))
-                        .uri("http://localhost:8083"))
+                        .uri(transactionServiceUrl))
                 .build();
     }
 

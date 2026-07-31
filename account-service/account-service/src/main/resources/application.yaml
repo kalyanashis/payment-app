@@ -6,9 +6,9 @@ spring:
     name: account-service
 
   datasource:
-    url: jdbc:mysql://localhost:3306/accountdb
-    username: root
-    password: data_archive
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:accountdb}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:data_archive}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
     jpa:

@@ -102,7 +102,7 @@ public class NotificationConsumer {
             log.error("Failed event received from DLT: {}", event);
 
             // DO NOT REPUBLISH
-            log.info("DLT message logged successfully for investigation");
+            log.info("DLT event message logged successfully for investigation");
 
         } catch (Exception ex) {
             log.error("Failed to process DLT message", ex);
@@ -123,10 +123,10 @@ public class NotificationConsumer {
             // Convert JSON to Object
             TransactionReversedEvent event = objectMapper.readValue(decryptedJson, TransactionReversedEvent.class);
             log.error("Transaction reversal event received from DLT: TransactionId={}", event.getTransactionId());
-            log.error("Failed event received from DLT: {}", event);
+            log.error("Failed reversal event received from DLT: {}", event);
 
             // DO NOT REPUBLISH
-            log.info("DLT message logged successfully for investigation");
+            log.info("DLT reversal event message logged successfully for investigation");
 
         } catch (Exception ex) {
             log.error("Failed to process DLT message", ex);
@@ -142,7 +142,7 @@ public class NotificationConsumer {
 
             // Decrypt payload
             String decryptedJson = aesEncryptionUtil.decrypt(encryptedPayload);
-            log.info("Decrypted reversal JSON for Kafka topic {}: {}", consumerRecord.topic(), decryptedJson);
+            log.info("Decrypted event payload for Kafka topic {}: {}", consumerRecord.topic(), decryptedJson);
 
             return objectMapper.readValue(decryptedJson, clazz);
 
